@@ -1,7 +1,7 @@
 
 
 def read_nwjssp(filepath: str):
-   
+
     with open(filepath, "r") as f:
         lines = [line.strip() for line in f if line.strip()]
 

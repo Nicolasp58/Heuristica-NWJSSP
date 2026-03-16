@@ -1,57 +1,66 @@
-"""
-Constructive.py
----------------
-Metodo Constructivo Greedy Deterministico para el NWJSSP.
-
-Idea:
-    En cada paso, del conjunto de trabajos no programados se selecciona aquel
-    que produce el menor tiempo de completacion C_j = s_j + total_j al ser
-    el siguiente en el schedule.
-    Desempate: menor tiempo total de procesamiento (criterio SPT-like).
-
-    Se mantiene un tracker de disponibilidad de maquinas que permite calcular
-    el earliest_start en O(m) en vez de O(n*m), reduciendo la complejidad
-    total del algoritmo de O(n^2 * m) a O(n^2 + n*m).
-"""
-
 import time
-from Evaluator import (
-    precompute,
-    make_machine_tracker,
-    update_machine_tracker,
-    earliest_start_tracked,
-    lower_bound,
-)
 
 
+#  Funciones de evaluación (autocontenidas)
+def _precompute(n, ops):
+
+    offsets = []
+    totals = []
+    machine_map = []
+    for j in range(n):
+        acc = 0
+        off = []
+        mmap = {}
+        for machine, p in ops[j]:
+            off.append(acc)
+            mmap[machine] = acc
+            acc += p
+        offsets.append(off)
+        totals.append(acc)
+        machine_map.append(mmap)
+    return offsets, totals, machine_map
+
+
+def _earliest_start(j, release_dates, machine_map_j, tracker):
+
+    s_j = release_dates[j]
+    for machine, off_v in machine_map_j.items():
+        if machine in tracker:
+            candidate = tracker[machine] - off_v
+            if candidate > s_j:
+                s_j = candidate
+    return s_j
+
+
+def _update_tracker(tracker, k, s_k, ops_k, offsets_k):
+
+    for u, (maq_u, p_ku) in enumerate(ops_k):
+        val = s_k + offsets_k[u] + p_ku
+        if maq_u not in tracker or val > tracker[maq_u]:
+            tracker[maq_u] = val
+
+
+#  Algoritmo constructivo
 def Constructive(n, m, ops, release_dates):
-    """
-    Algoritmo constructivo greedy deterministico.
 
-    Parameters
-    ----------
-    n             : int
-    m             : int
-    ops           : list[list[tuple(int,int)]]
-    release_dates : list[int]
-
-    Returns
-    -------
-    Z           : int
-    S           : list[int]   orden de programacion
-    start_times : list[int]   start_times[j] = tiempo de inicio de j
-    flow_times  : list[int]   flow_times[j]  = tiempo de completacion de j
-    t_ms        : float
-    """
     t_start = time.time()
 
-    offsets, totals, machine_map = precompute(n, ops)
-    tracker = make_machine_tracker(m)
+    offsets, totals, machine_map = _precompute(n, ops)
+    tracker = {}
 
-    unscheduled = set(range(n))
+    unscheduled = list(range(n))
     scheduled = []
     start_times = [0] * n
 
+    # Paso 1: primer trabajo por menor tiempo total
+    first_job = min(unscheduled, key=lambda j: totals[j])
+    s_first = _earliest_start(first_job, release_dates, machine_map[first_job], tracker)
+    start_times[first_job] = s_first
+    _update_tracker(tracker, first_job, s_first, ops[first_job], offsets[first_job])
+    scheduled.append(first_job)
+    unscheduled.remove(first_job)
+
+    # ── Paso 2: selección dinámica por menor C_j
     while unscheduled:
         best_job   = None
         best_C     = float("inf")
@@ -59,7 +68,7 @@ def Constructive(n, m, ops, release_dates):
         best_s     = 0
 
         for j in unscheduled:
-            s_j = earliest_start_tracked(j, release_dates, machine_map[j], tracker)
+            s_j = _earliest_start(j, release_dates, machine_map[j], tracker)
             C_j = s_j + totals[j]
 
             if C_j < best_C or (C_j == best_C and totals[j] < best_total):
@@ -69,7 +78,7 @@ def Constructive(n, m, ops, release_dates):
                 best_s     = s_j
 
         start_times[best_job] = best_s
-        update_machine_tracker(tracker, best_job, best_s, ops[best_job], offsets[best_job])
+        _update_tracker(tracker, best_job, best_s, ops[best_job], offsets[best_job])
         scheduled.append(best_job)
         unscheduled.remove(best_job)
 
