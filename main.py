@@ -1,19 +1,3 @@
-"""
-main.py
--------
-Orquestador principal del proyecto NWJSSP.
-Universidad EAFIT — Curso: Heuristica
-Estudiante: Nicolas Pena
-
-Ejecuta los tres algoritmos (Constructivo, GRASP, Noise) sobre todas las
-instancias .txt disponibles en la carpeta de instancias y genera archivos
-Excel con los resultados en el formato requerido (Anexo 3).
-
-============================================================
-PARAMETROS DEL ALGORITMO — modificar solo aqui
-============================================================
-"""
-
 import os
 import time
 from openpyxl import Workbook
@@ -21,25 +5,28 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
 from Read import read_nwjssp
-from Evaluator import precompute, lower_bound
 from Constructive import Constructive
 from GRASP1 import GRASP1
 from Noise import Noise
 
-# ============================================================
-# PARAMETROS — editar estos valores para cambiar el comportamiento
-# ============================================================
-INSTANCES_FOLDER = "NWJSSP Instances"   # Carpeta con los archivos .txt de instancias
 
-nsol  = 100    # Numero de soluciones (iteraciones de GRASP y Noise)
-alpha = 0.05   # Parametro GRASP: controla tamano de la RCL (0=greedy, 1=aleatorio)
-K     = 5      # Tamano maximo de la RCL (referencia conceptual; se usa alpha como criterio)
-r     = 5      # Amplitud del ruido para el Noising Method
-# ============================================================
+INSTANCES_FOLDER = "NWJSSP Instances"
+
+nsol  = 100      # Número de soluciones (iteraciones de GRASP y Noise)
+alpha = 0.03   # Parámetro GRASP: controla tamaño de la RCL (0=greedy, 1=aleatorio)
+r     = 0.05      # Amplitud del ruido para el Noising Method
+
+
+def lower_bound(n, release_dates, ops):
+    
+    lb = 0
+    for j in range(n):
+        total_j = sum(p for _, p in ops[j])
+        lb += release_dates[j] + total_j
+    return lb
 
 
 def style_header(ws, row, col, value):
-    """Celda con estilo de encabezado."""
     cell = ws.cell(row=row, column=col, value=value)
     cell.font = Font(bold=True, color="FFFFFF")
     cell.fill = PatternFill("solid", fgColor="1F4E79")
@@ -48,40 +35,28 @@ def style_header(ws, row, col, value):
 
 
 def write_result_sheet(ws, Z, t_ms, start_times, lb, instance_name, method_name, n):
-    """
-    Escribe resultados en una hoja de Excel.
-
-    Formato Anexo 3:
-        Fila 1:  Z   t_ms
-        Fila 2:  s_0  s_1  ...  s_{n-1}
-    (con filas adicionales de informacion y cota inferior)
-    """
     ws.column_dimensions["A"].width = 24
     ws.column_dimensions["B"].width = 20
 
-    # Informacion general
     style_header(ws, 1, 1, "Instancia");    ws.cell(row=1, column=2, value=instance_name)
     style_header(ws, 2, 1, "Metodo");       ws.cell(row=2, column=2, value=method_name)
     style_header(ws, 3, 1, "Parametros")
-    ws.cell(row=3, column=2, value=f"nsol={nsol}, alpha={alpha}, K={K}, r={r}")
+    ws.cell(row=3, column=2, value=f"nsol={nsol}, alpha={alpha}, r={r}")
 
-    # Resultado principal (formato Anexo 3)
     style_header(ws, 5, 1, "Z (Flow Time)")
     style_header(ws, 5, 2, "Tiempo cómputo (ms)")
     ws.cell(row=6, column=1, value=Z)
     ws.cell(row=6, column=2, value=round(t_ms))
 
-    # Cota inferior y gap
     style_header(ws, 8, 1, "Cota Inferior (LB)")
     style_header(ws, 8, 2, "Gap (%)")
     ws.cell(row=9, column=1, value=lb)
     gap = round((Z - lb) / lb * 100, 2) if lb > 0 else 0
     ws.cell(row=9, column=2, value=gap)
 
-    # Tiempos de inicio (s_0, s_1, ..., s_{n-1})
     style_header(ws, 11, 1, f"Tiempos de inicio — {n} trabajos")
 
-    COLS = 20   # trabajos por fila
+    COLS = 20
     for i, s in enumerate(start_times):
         col = (i % COLS) + 1
         row = 12 + (i // COLS)
@@ -94,7 +69,6 @@ def write_result_sheet(ws, Z, t_ms, start_times, lb, instance_name, method_name,
 
 
 def run_on_instance(filepath, instance_name):
-    """Ejecuta los tres algoritmos sobre una instancia."""
     print(f"\n{'='*60}")
     print(f"  Instancia: {instance_name}")
     print(f"{'='*60}")
@@ -102,8 +76,7 @@ def run_on_instance(filepath, instance_name):
     n, m, ops, release_dates = read_nwjssp(filepath)
     print(f"  n={n} trabajos, m={m} maquinas")
 
-    _, totals, _ = precompute(n, ops)
-    lb = lower_bound(n, release_dates, totals)
+    lb = lower_bound(n, release_dates, ops)
     print(f"  Cota inferior (LB): {lb:,}")
 
     # 1. Constructivo Greedy
@@ -128,7 +101,6 @@ def run_on_instance(filepath, instance_name):
 
 
 def build_excel(method_name, results, output_path):
-    """Genera un archivo Excel con una hoja por instancia."""
     wb = Workbook()
     wb.remove(wb.active)
 
@@ -142,14 +114,14 @@ def build_excel(method_name, results, output_path):
 
 def main():
     print("=" * 60)
-    print("  NWJSSP — Metodos Constructivos y Aleatorizados")
+    print("  NWJSSP — Métodos Constructivos y Aleatorizados")
     print("  Nicolas Pena — Universidad EAFIT")
     print("=" * 60)
-    print(f"  Parametros: nsol={nsol}, alpha={alpha}, K={K}, r={r}")
+    print(f"  Parámetros: nsol={nsol}, alpha={alpha}, r={r}")
 
     if not os.path.isdir(INSTANCES_FOLDER):
-        print(f"\nERROR: No se encontro la carpeta '{INSTANCES_FOLDER}/'.")
-        print("Crea la carpeta y coloca ahi los archivos .txt de las instancias.")
+        print(f"\nERROR: No se encontró la carpeta '{INSTANCES_FOLDER}/'.")
+        print("Crea la carpeta y coloca ahí los archivos .txt de las instancias.")
         return
 
     instance_files = sorted(

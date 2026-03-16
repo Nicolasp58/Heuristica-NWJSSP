@@ -1,36 +1,7 @@
-"""
-Read.py
--------
-Lectura de instancias NWJSSP desde archivos .txt
-
-Formato esperado:
-    Primera línea: n  m
-    Siguientes n líneas: maq_1 p_1 maq_2 p_2 ... maq_m p_m  r_j
-
-Retorna:
-    n   -> número de trabajos
-    m   -> número de máquinas
-    ops -> lista de listas: ops[j] = [(maq, p_time), ...] en orden de operaciones
-    r   -> lista de release dates: r[j]
-"""
 
 
 def read_nwjssp(filepath: str):
-    """
-    Lee una instancia NWJSSP desde un archivo .txt
-
-    Parameters
-    ----------
-    filepath : str
-        Ruta completa al archivo .txt de la instancia
-
-    Returns
-    -------
-    n   : int               -> número de trabajos
-    m   : int               -> número de máquinas
-    ops : list[list[tuple]] -> ops[j] = [(machine, proc_time), ...] para cada operación de j
-    r   : list[int]         -> r[j] = release date del trabajo j
-    """
+   
     with open(filepath, "r") as f:
         lines = [line.strip() for line in f if line.strip()]
 
