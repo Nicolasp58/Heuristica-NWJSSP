@@ -1,43 +1,3 @@
-"""
-LocalSearch.py
-==============
-Búsqueda local PURA para NWJSSP – Trabajo 2, Heurística EAFIT.
-
-NO usa Multi-Start. La búsqueda termina cuando no existe ningún vecino
-que mejore la solución actual (óptimo local), exactamente como define
-el procedimiento básico de búsqueda local del curso.
-
-Solución inicial
-----------------
-Constructivo Greedy (determinístico). La MISMA para todas las
-combinaciones vecindario × criterio de cada instancia.
-
-Vecindarios
------------
-N1 – Swap(i)     : intercambiar posición i con i+1 (solo adyacentes).
-                   Tamaño: n-1 movimientos.
-N2 – Insert(i,j) : extraer trabajo en i, reinsertar en j ∈ [i-k, i+k],
-                   excluyendo j = i-1, i, i+1 (evita solapamiento con Swap).
-                   Tamaño: ≈ 2(k-1)·n movimientos con k=3.
-N3 – 2-opt(i,j)  : invertir segmento [i..j], 3 ≤ largo ≤ L.
-                   Largo mínimo 3 evita solapamiento con Swap.
-                   Tamaño: ≈ (L-2)·n movimientos con L=5.
-
-Criterios
----------
-BI – Best Improvement  : explora TODO el vecindario, acepta el mejor vecino
-                         que mejore. Para cuando ninguno mejora.
-FI – First Improvement : acepta el PRIMER vecino que mejore y reinicia la
-                         exploración. Para cuando ninguno mejora.
-
-Límite de tiempo opcional
---------------------------
-Si se pasa un deadline, la búsqueda se interrumpe al alcanzarlo (útil
-para instancias grandes donde un solo pase del vecindario ya es costoso).
-Para instancias pequeñas el deadline nunca se activa porque terminan
-antes de converger al óptimo local.
-"""
-
 import time
 
 INSERT_K   = 3
@@ -46,10 +6,7 @@ TWOOPT_MIN = 3
 MAX_CACHE  = 80_000
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 #  Precómputo
-# ─────────────────────────────────────────────────────────────────────────────
-
 def precompute(n, ops):
     offsets, totals, machine_map = [], [], []
     for j in range(n):
@@ -64,10 +21,7 @@ def precompute(n, ops):
     return offsets, totals, machine_map
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 #  Evaluación
-# ─────────────────────────────────────────────────────────────────────────────
-
 def evaluate_sequence(sequence, release_dates, ops, offsets, totals, machine_map):
     """Z = Σ C_j. Complejidad O(n·m)."""
     n, tracker, start_times = len(sequence), {}, [0] * len(sequence)
@@ -97,10 +51,7 @@ def _cached_eval(seq, release_dates, ops, offsets, totals, machine_map, cache):
     return Z, False
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 #  Movimientos
-# ─────────────────────────────────────────────────────────────────────────────
-
 def _do_swap(seq, i):
     s = seq[:]
     s[i], s[i + 1] = s[i + 1], s[i]
@@ -120,21 +71,15 @@ def _do_2opt(seq, i, j):
     return s
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 #  Generadores de movimientos
-# ─────────────────────────────────────────────────────────────────────────────
-
 def _gen_swap(n):
-    """n-1 movimientos: intercambio de posición i con i+1."""
+    
     for i in range(n - 1):
         yield (i,)
 
 
 def _gen_insert(n, k=INSERT_K):
-    """
-    j_orig ∈ [i-k, i+k], excluyendo i-1, i, i+1.
-    Excluir i±1 evita solapamiento con Swap (mover 1 posición = Swap).
-    """
+    
     for i in range(n):
         lo = max(0, i - k)
         hi = min(n - 1, i + k)
@@ -146,10 +91,7 @@ def _gen_insert(n, k=INSERT_K):
 
 
 def _gen_2opt(n, min_len=TWOOPT_MIN, max_len=TWOOPT_L):
-    """
-    Segmentos de largo ∈ [min_len, max_len].
-    min_len=3 evita solapamiento con Swap (largo 2 = Swap adyacente).
-    """
+    
     for i in range(n):
         for length in range(min_len, max_len + 1):
             j = i + length - 1
@@ -167,18 +109,11 @@ def _get_moves_and_fn(neighborhood, n):
         return _gen_2opt(n), _do_2opt
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 #  Best Improvement
-# ─────────────────────────────────────────────────────────────────────────────
-
 def local_search_BI(sequence, Z_init, release_dates, ops,
                     offsets, totals, machine_map,
                     neighborhood, deadline, cache):
-    """
-    Best Improvement: explora TODO el vecindario en cada iteración y acepta
-    el mejor vecino que mejore la solución. Para al llegar al óptimo local
-    (ningún vecino mejora) o al alcanzar el deadline.
-    """
+    
     n        = len(sequence)
     cur_seq  = sequence[:]
     cur_Z    = Z_init
@@ -215,18 +150,11 @@ def local_search_BI(sequence, Z_init, release_dates, ops,
     return cur_seq, cur_Z, iters, evals
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 #  First Improvement
-# ─────────────────────────────────────────────────────────────────────────────
-
 def local_search_FI(sequence, Z_init, release_dates, ops,
                     offsets, totals, machine_map,
                     neighborhood, deadline, cache):
-    """
-    First Improvement: acepta el PRIMER vecino que mejore y reinicia la
-    exploración del vecindario. Para al llegar al óptimo local (ningún
-    vecino mejora en un recorrido completo) o al alcanzar el deadline.
-    """
+    
     n        = len(sequence)
     cur_seq  = sequence[:]
     cur_Z    = Z_init
@@ -258,10 +186,7 @@ def local_search_FI(sequence, Z_init, release_dates, ops,
     return cur_seq, cur_Z, iters, evals
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 #  Interfaz pública
-# ─────────────────────────────────────────────────────────────────────────────
-
 NEIGHBORHOODS = ['swap', 'insert', '2opt']
 CRITERIA      = ['BI', 'FI']
 _LS_FN        = {'BI': local_search_BI, 'FI': local_search_FI}
@@ -272,15 +197,7 @@ def run_local_search(n, m, ops, release_dates,
                      neighborhood, criterion,
                      deadline=None,    # tiempo absoluto (time.time()+s), o None = sin límite
                      cache=None):
-    """
-    Ejecuta búsqueda local pura (sin Multi-Start).
-
-    Para naturalmente al alcanzar el óptimo local.
-    Si se provee deadline, también para al alcanzarlo (instancias grandes).
-
-    La solución inicial debe ser la MISMA para todas las combinaciones
-    de una instancia (calculada con Constructivo Greedy fuera de aquí).
-    """
+    
     if cache is None:
         cache = {}
 

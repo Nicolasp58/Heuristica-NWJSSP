@@ -1,34 +1,3 @@
-"""
-main2.py
-========
-Orquestador principal – Trabajo 2, Heurística EAFIT.
-Búsqueda local PURA (sin Multi-Start).
-
-Distribución del tiempo
------------------------
-Las instancias pequeñas terminan en milisegundos (convergen al óptimo
-local rápidamente). Las instancias grandes necesitan tiempo porque cada
-evaluación de la FO es costosa y el vecindario es enorme.
-
-El tiempo total (1 hora) se distribuye proporcionalmente al "peso" de
-cada instancia, calculado como:  peso = n * m
-Esto asigna más tiempo a instancias con más operaciones totales.
-Las instancias pequeñas igual terminan antes del deadline — el sobrante
-no se puede recuperar en búsqueda local pura, lo cual es correcto.
-
-Ejecución: SECUENCIAL con deadlines absolutos por combinación.
-Esto garantiza que el tiempo de reloj sea exacto.
-
-Formato Excel (Anexo 3):
-  A1 = Z,  B1 = tiempo_ms
-  Fila 2 = s_0, s_1, ..., s_{n-1}
-
-Solución inicial: Noise(r=0.5, nsol=1).
-  Costo idéntico al Constructivo (~5% overhead).
-  Produce una solución más débil que el greedy puro, dando más
-  margen de mejora a la búsqueda local.
-"""
-
 import os
 import time
 from openpyxl import Workbook
@@ -38,8 +7,8 @@ from Noise       import Noise
 from LocalSearch import run_local_search, NEIGHBORHOODS, CRITERIA
 
 # Parámetros de la solución inicial
-NOISE_R    = 0.5   # ruido fuerte → solución peor que greedy, más margen de mejora
-NOISE_NSOL = 1     # una sola construcción → costo idéntico al constructivo
+NOISE_R    = 0.5   
+NOISE_NSOL = 1     
 
 INSTANCES_FOLDER = "NWJSSP Instances"
 LB_FILE          = "lb.txt"
