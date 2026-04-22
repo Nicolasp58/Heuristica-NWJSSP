@@ -1,23 +1,3 @@
-"""
-main2.py
-========
-Orquestador principal – Trabajo 2, Heurística EAFIT.
-Búsqueda local PURA (sin Multi-Start).
-
-Distribución del tiempo
------------------------
-El tiempo total (1 hora) se distribuye proporcionalmente al peso n*m de
-cada instancia. Ejecución secuencial con deadlines absolutos.
-
-Formato Excel (Anexo 3):
-  A1 = Z,  B1 = tiempo_ms
-  Fila 2 = s_0, s_1, ..., s_{n-1}
-
-Solución inicial: Noise(r=0.5, nsol=1).
-
-Orden de instancias: debe coincidir exactamente con el orden de lb.txt.
-"""
-
 import os
 import time
 from openpyxl import Workbook
@@ -35,7 +15,7 @@ LB_FILE          = "lb.txt"
 TOTAL_TIME_S     = 3_600
 STUDENT_NAME     = "NicolasPena"
 
-# Orden exacto — debe coincidir línea a línea con lb.txt
+# Orden exacto 
 INSTANCE_ORDER = [
     "ft06.txt",
     "ft06r.txt",
