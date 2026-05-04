@@ -109,9 +109,17 @@ def main():
         dims.append((nv, mv))
 
     # tabla de tiempos estimados (referencia)
-    from test3 import estimate_times
-    tvnd_est = estimate_times(TOTAL_TIME_VND_S, dims)
-    tils_est = estimate_times(TOTAL_TIME_ILS_S, dims)
+    def _estimate_times(total_s, dims_list, min_s=MIN_TIME_S):
+        n         = len(dims_list)
+        floor     = min_s * n
+        remaining = max(0.0, total_s - floor)
+        weights   = [ni * mi for ni, mi in dims_list]
+        total_w   = sum(weights) or 1
+        return [min_s + remaining * w / total_w for w in weights]
+
+
+    tvnd_est = _estimate_times(TOTAL_TIME_VND_S, dims)
+    tils_est = _estimate_times(TOTAL_TIME_ILS_S, dims)
     print(f"\n  {'Instancia':<30} {'n':>6} {'m':>6} {'VND_est':>10} {'ILS_est':>10}")
     print(f"  {'─'*30} {'─'*6} {'─'*6} {'─'*10} {'─'*10}")
     for i, fname in enumerate(instance_files):
